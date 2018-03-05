@@ -12,6 +12,7 @@
 		font-size: 14pt;
 	}
 </style>
+<div>Введите код или ответ на вопрос: Название символа внутри круглой коробки.</div>
 <input type="text" id="inp">
 <input type="button" id="btn" value="Получить координаты !!!">
 <div id="coords"></div>
@@ -22,8 +23,8 @@
 
 		if (text == "2248") {
 			$("#coords").text("С2В9");
-		} else if (text.toLowerCase() == "роджер") {
-			$("#coords").text("да");
+		} else if (text.toLowerCase() == "веселый роджер" || (text.toLowerCase() == "весёлый роджер") {
+			$("#coords").text("Подсказка: ""Агафья"" :)");
 		} else {
 			$("#coords").text("Неверный ввод!");
 		}
