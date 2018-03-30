@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Videos</title>
+</head>
+<body>
+<style>
+
+.caption {
+  font-weight: bold;
+}
+
+.robot-circle, .target-circle {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  border: 1px solid grey;
+  cursor: pointer;
+}
+
+.td_padding_small td {
+  padding-top: 50px;
+  padding-right: 20px;
+}
+
+.td_padding_big {
+  padding-top: 50px;
+  padding-right: 150px;
+}
+
+#info {
+  margin: 20px 90px;
+  font-weight: bold;
+}
+
+.video_sel_but {
+  margin-left: 30px;
+  cursor: pointer;
+}
+
+#start_button {
+  width: 200px;
+  height: 50px;
+  font-size: 20pt;
+  margin: 30px;
+  cursor: pointer;
+}
+
+#link_check, #link_check ~ label {
+  cursor: pointer;
+}
+
+</style>
+<p id="status">OpenCV.js is loading...</p>
+
+<table>
+<tbody>
+  <tr>
+    <td>
+      <video id="videoInput" width="640" height="480" preload="auto" src="Robo_video\00.mp4" controls></video>
+    </td>
+    <td><canvas id="canvasOutput" width="640" height="480"></canvas></td>
+  </tr>
+</tbody>
+</table>
+
+<div id="info">Расстояние от робота до цели: </div>
+
+<table>
+  <tbody>
+    <tr>
+      <td>Метка робота:</td>
+      <td class="td_padding_small"></td>
+      <td>
+        <div class="robot-circle" val="0"></div>
+        <div class="robot-circle" val="0"></div>
+        <div class="robot-circle" val="0"></div>
+      </td>
+      <td class="td_padding_big"></td>
+      <td>Метка цели:</td>
+      <td class="td_padding_small"></td>
+      <td>
+        <div class="target-circle" val="0"></div>
+        <div class="target-circle" val="0"></div>
+        <div class="target-circle" val="0"></div>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="3">
+        <input type="button" id="start_button" value="Start">
+      </td>
+      <td class="td_padding_big"></td>
+      <td colspan="3"><input type="checkbox" id="link_check"><label for="link_check">Связать метки</label></td>
+    </tr>
+  </tbody>
+</table>
+
+<div id="video_selector">
+  <input type="button" value="Видео_0" class="video_sel_but" vid="0">
+  <input type="button" value="Видео_1" class="video_sel_but" vid="1">
+  <input type="button" value="Видео_2" class="video_sel_but" vid="2">
+  <input type="button" value="Видео_3" class="video_sel_but" vid="3">
+  <input type="button" value="Видео_4" class="video_sel_but" vid="4">
+  <input type="button" value="Видео_5" class="video_sel_but" vid="5">
+</div>
+
+<script type="text/javascript">
+
+var button = document.getElementById('start_button');
+var video = document.getElementById('videoInput');
+// video.setAttribute("src", "Robo_video/00.wmv");
+
+var canvasOutput = document.getElementById('canvasOutput');
+var canvasContext = canvasOutput.getContext('2d');
+
+var streaming = false;
+
+var robot_marks = document.getElementsByClassName("robot-circle");
+var target_marks = document.getElementsByClassName("target-circle");
+
+for (var i = 0; i < robot_marks.length; i++) {
+  robot_marks[i].addEventListener("click", function () {
+    var val = +this.getAttribute("val");
+    val = (val == 3) ? 0 : val + 1;
+    this.style.backgroundColor = colors_val[val];
+    this.setAttribute("val", val);
+  })
+}
+
+for (var i = 0; i < target_marks.length; i++) {
+  target_marks[i].addEventListener("click", function () {
+    var val = +this.getAttribute("val");
+    val = (val == 3) ? 0 : val + 1;
+    this.style.backgroundColor = colors_val[val];
+    this.setAttribute("val", val);
+  })
+}
+
+document.getElementById("link_check").addEventListener("change", function () {
+  link = !link;
+});
+
+var info = document.getElementById("info");
+
+var link = false;
+
+var MARK_ROBOT = 0;
+var MARK_TARGET = 0;
+
+button.addEventListener('click', function () {
+    if (!streaming) {
+        MARK_ROBOT = getMarkValue("robot-circle");
+        MARK_TARGET = getMarkValue("target-circle");
+        video.play();
+        processFirstFrame();
+        onVideoStarted();
+    } else {
+        videoInput.pause();
+        videoInput.currentTime = 0;
+        onVideoStopped();
+    }
+});
+
+var video_change = document.getElementsByClassName("video_sel_but");
+
+for (i = 0; i < video_change.length; i++) {
+  video_change[i].addEventListener("click", function () {
+    var vid = this.getAttribute("vid");
+    video.setAttribute("src", "Robo_video\\0" + vid + ".mp4");
+  });
+}
+
+var colors = {
+  white: 0,
+  red: 1,
+  green: 2,
+  blue: 3
+}
+
+var colors_val = {
+  0: "white",
+  1: "red",
+  2: "green",
+  3: "blue"
+}
+
+var ROBOT = {
+  center: 0,
+  rect_start: 0,
+  rect_end: 0,
+  width: 0,
+  height: 0
+}
+
+var TARGET = {
+  center: 0,
+  rect_start: 0,
+  rect_end: 0
+}
+
+var contours_info = [];
+
+function processFirstFrame() {
+  // Получение исходного изображения
+
+  var cap = new cv.VideoCapture(video);
+
+  // Берем первый кадр
+
+  var src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+  cap.read(src);
+
+  // Размытие по Гауссу
+
+  var gauss = new cv.Mat();
+  cv.GaussianBlur(src, gauss, new cv.Size(3, 3), 4, 4, cv.BORDER_DEFAULT);
+
+  // Конвертация в HSV
+
+  cv.cvtColor(gauss, gauss, cv.COLOR_BGR2HSV);
+
+  // Диапазоны для цветов в пространстве HSV
+
+  var thresholds = {
+    red: {
+      low: [110, 150, 50, 0],
+      high: [130, 255, 255, 255]
+    },
+    green: {
+      low: [27, 80, 30, 0],
+      high: [60, 255, 255, 255]
+    },
+    blue: {
+      low: [0, 110, 15, 0],
+      high: [20, 255, 255, 255]
+    }
+  };
+
+  // Маски для цветов
+
+  var maps = {
+    red: new cv.Mat(),
+    green: new cv.Mat(),
+    blue: new cv.Mat(),
+  };
+
+  var low = undefined;
+  var high = undefined;
+
+  var M = new cv.Mat(); // Эллиптический структурный элемент 3х3
+  M = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(3, 3));
+
+  // Объект для окружностей
+
+  var circles = {
+    red: new cv.Mat(),
+    green: new cv.Mat(),
+    blue: new cv.Mat()
+  }
+
+  // var circles = new cv.Mat();
+
+  // Центры окружностей
+
+  var centers = {
+    red: [],
+    green: [],
+    blue: []
+  }
+
+  // Работа с каждой маской
+
+  for (var key in maps) {
+
+    // Применение пороговых значений для размых по Гауссу масок
+
+    low = new cv.Mat(gauss.rows, gauss.cols, gauss.type(), thresholds[key].low);
+    high = new cv.Mat(gauss.rows, gauss.cols, gauss.type(), thresholds[key].high);
+
+    cv.inRange(gauss, low, high, maps[key]);
+
+    // Применение операций раскрытия и закрытия к цветовым маскам
+
+    cv.morphologyEx(maps[key], maps[key], cv.MORPH_OPEN, M, new cv.Point(-1, -1), 1, cv.BORDER_CONSTANT, cv.morphologyDefaultBorderValue()); // Удаление шума
+    cv.morphologyEx(maps[key], maps[key], cv.MORPH_CLOSE, M); // Удаление черных точек на маске
+
+    // Применение размытия по Гауссу на маску для более точного определения окружностей
+
+    cv.GaussianBlur(maps[key], maps[key], new cv.Size(5, 5), 4, 4, cv.BORDER_DEFAULT);
+
+    // Нахождение окружностей методом Hough Circles
+
+    cv.HoughCircles(maps[key], circles[key], cv.HOUGH_GRADIENT, 1, 5, 80, 14, 0, 15);
+  }
+
+  // Находим максимальный радиус окружности
+
+  var max_radius = 0;
+
+  for (key in circles) {
+    for (var i = 0; i < circles[key].cols; i++) {
+      var radius = circles[key].data32F[i * 3 + 2];
+      max_radius = Math.max(radius, max_radius);
+    }
+  }
+
+  // Рисуем залитые окружности в одном объекте. Радиус - максимальный
+  // Помещаем координаты центров окружностей в объект centers
+
+  var drawn_circles = cv.Mat.zeros(src.rows, src.cols, cv.CV_8U);
+
+  // var dst = {
+  //   red: cv.Mat.zeros(src.rows, src.cols, cv.CV_8U),
+  //   green: cv.Mat.zeros(src.rows, src.cols, cv.CV_8U),
+  //   blue: cv.Mat.zeros(src.rows, src.cols, cv.CV_8U)
+  // }
+
+  for (key in circles) {
+    for (var i = 0; i < circles[key].cols; i++) {
+      var x = circles[key].data32F[i * 3];
+      var y = circles[key].data32F[i * 3 + 1];
+      var center = new cv.Point(x, y);
+
+      centers[key].push(center);
+
+      cv.circle(drawn_circles, center, max_radius, new cv.Scalar(255, 255, 255, 255), -1);
+    }
+  }
+
+  // Расширение окружностей для создания замкнутых областей
+
+  M = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(10, 10));
+  cv.dilate(drawn_circles, drawn_circles, M, new cv.Point(-1, -1), 1, cv.BORDER_CONSTANT, cv.morphologyDefaultBorderValue());
+
+  // cv.imshow('canvasOutput', drawn_circles);
+
+  // Нахождение контуров
+
+  var contours = new cv.MatVector();
+  var hierarchy = new cv.Mat();
+
+  cv.findContours(drawn_circles, contours, hierarchy, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE);
+
+  // ***
+
+  // var dst = cv.Mat.zeros(src.rows, src.cols, cv.CV_8U);
+
+  // for (var i = 0; i < contours.size(); i++) {
+  //     cv.drawContours(dst, contours, i, new cv.Scalar(255, 255, 255, 255), 1, cv.LINE_8, hierarchy, 100);
+  // }
+
+  // ***
+
+  // Заполнение информации о контуре - центров окружностей в нем и цветов
+
+  for (i = 0; i < contours.size(); i++) {
+    var contour = [];
+
+    for (key in centers) {
+      for (var j = 0; j < centers[key].length; j++) {
+        if (cv.pointPolygonTest(contours.get(i), centers[key][j], false) == 1) {
+          contour.push({
+            center: centers[key][j],
+            color: colors[key]
+          })
+        }
+      }
+    }
+
+    contours_info.push(contour);
+  }
+
+  // Сортировка центров и цветов в каждом контуре
+
+  for (i = 0; i < contours_info.length; i++) {
+    var centers_x = contours_info[i].map(function (elem) {
+      return elem.center.x;
+    });
+
+    var centers_y = contours_info[i].map(function (elem) {
+      return elem.center.y;
+    });
+
+    var max_x = Math.max.apply(null, centers_x);
+    var min_x = Math.min.apply(null, centers_x);
+
+    var max_y = Math.max.apply(null, centers_y);
+    var min_y = Math.min.apply(null, centers_y);
+
+    var diff_x = max_x - min_x;
+    var diff_y = max_y - min_y;
+
+    var square = {
+      start: {
+        x: (max_x + min_x)/2 - Math.max(diff_x, diff_y)/2 - 20,
+        y: (max_y + min_y)/2 + Math.max(diff_x, diff_y)/2 + 20
+      },
+      end: {
+        x: (max_x + min_x)/2 + Math.max(diff_x, diff_y)/2 + 20,
+        y: (max_y + min_y)/2 - Math.max(diff_x, diff_y)/2 - 20
+      }
+    }
+
+    contours_info[i].center = new cv.Point((max_x + min_x)/2, (max_y + min_y)/2);
+
+    contours_info[i].rect_start = new cv.Point(min_x - 10, max_y + 10);
+    contours_info[i].rect_end = new cv.Point(max_x + 10, min_y - 10);
+
+    contours_info[i].robot_rect_start = new cv.Point(square.start.x, square.start.y);
+    contours_info[i].robot_rect_end = new cv.Point(square.end.x, square.end.y);
+
+    contours_info[i].mark = contours_info[i].map(function (elem) {
+      return elem.color;
+    }).join("");
+
+    if (diff_x > diff_y) {
+      contours_info[i].sort(compare_x);
+    } else {
+      contours_info[i].sort(compare_y);
+    }
+  }
+
+  contours_info.forEach(function (item, i) {
+    if (item.mark == MARK_ROBOT || item.mark == MARK_ROBOT.split("").reverse().join("")) {
+      ROBOT.center = item.center;
+      ROBOT.rect_start = item.robot_rect_start;
+      ROBOT.rect_end = item.robot_rect_end;
+      ROBOT.width = item.robot_rect_end.x - item.robot_rect_start.x;
+      ROBOT.height = item.robot_rect_start.y - item.robot_rect_end.y;
+    };
+
+    if (item.mark == MARK_TARGET || item.mark == MARK_TARGET.split("").reverse().join("")) {
+      TARGET.center = item.center;
+      TARGET.rect_start = item.robot_rect_start;
+      TARGET.rect_end = item.robot_rect_end;
+    };
+  });
+
+  // Очистка результатов обработки
+
+  src.delete();
+  gauss.delete();
+  drawn_circles.delete();
+  contours.delete();
+
+  for (key in maps) {
+    maps[key].delete();
+    circles[key].delete();
+  }
+}
+
+function startProcessing() {
+
+  var cap = new cv.VideoCapture(video);
+
+  var frame = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+  var fgmask = new cv.Mat(video.height, video.width, cv.CV_8UC1);
+  var fgbg = new cv.BackgroundSubtractorMOG2(50, 70, false);
+
+  var max_step = Math.min(video.width, video.height) * 0.1;
+  var min_step = 0;
+
+  var cur_x = ROBOT.center.x;
+  var cur_y = ROBOT.center.y;
+
+  var m_x = ROBOT.center.x;
+  var m_y = ROBOT.center.y;
+
+  const FPS = 30;
+
+  function processVideo() {
+    if (!streaming) {
+        frame.delete(); fgmask.delete(); fgbg.delete();
+        return;
+    }
+    var begin = Date.now();
+
+    cap.read(frame);
+
+    fgbg.apply(frame, fgmask);
+
+    // Размытие маски
+
+    cv.blur(fgmask, fgmask, new cv.Size(3, 3), new cv.Point(-1, -1), cv.BORDER_DEFAULT);
+
+    // Находим центр масс изображения
+
+    var mom = cv.moments(fgmask, true);
+
+    m_x = isNaN(mom.m10/mom.m00) ? m_x : mom.m10/mom.m00;
+    m_y = isNaN(mom.m01/mom.m00) ? m_y : mom.m01/mom.m00;
+
+    var length = Math.sqrt(Math.pow((m_x - cur_x), 2) + Math.pow((m_y - cur_y), 2));
+    // console.log(mom.m10, mom.m01);
+
+    // Передвигаем рамку только если расстояние между центром масс и текущим центром рамки
+    // больше минимального и меньше максимального заданного шага,
+    // а также если момент m01 больше 150000. Момент робота ~500000 - 700000, а мяча - примерно 90000
+
+    if (length >= min_step && length <= max_step && mom.m01 > 150000) {
+      cur_x = m_x;
+      cur_y = m_y;
+    }
+
+    // Выделяем робота прямоугольником
+
+    cv.rectangle(frame, new cv.Point(cur_x - ROBOT.width/2, cur_y + ROBOT.width/2), new cv.Point(cur_x + ROBOT.width/2, cur_y - ROBOT.width/2), new cv.Scalar(255, 0, 0, 255), 2);
+
+    // Выделяем прямоугольником цель
+
+    cv.rectangle(frame, TARGET.rect_start, TARGET.rect_end, new cv.Scalar(0, 0, 255, 255), 2);
+
+    // Если отмечен флаг связи - рисуем отрезок, соединяющий центры меток
+
+    if (link) cv.line(frame, new cv.Point(cur_x, cur_y), TARGET.center, new cv.Scalar(0, 255, 0, 255), thickness = 1, lineType = cv.LINE_8);
+
+    var distance = Math.round(Math.sqrt(Math.pow((TARGET.center.x - cur_x), 2) + Math.pow((TARGET.center.y - cur_y), 2)));
+
+    info.textContent = "Расстояние от робота до цели: " + (isNaN(distance) ? 0 : distance) + " px";
+
+    cv.imshow('canvasOutput', frame);
+
+    var delay = 1500/FPS - (Date.now() - begin);
+    setTimeout(processVideo, delay);
+  };
+
+  setTimeout(processVideo, 0);
+}
+
+function onVideoStarted() {
+    streaming = true;
+    button.value = 'Stop';
+    startProcessing();
+}
+
+function onVideoStopped() {
+    streaming = false;
+    canvasContext.clearRect(0, 0, canvasOutput.width, canvasOutput.height);
+    button.value = 'Start';
+}
+
+function getMarkValue(class_name) {
+  var marks = document.getElementsByClassName(class_name);
+
+  var val = "";
+
+  for (var i = 0; i < marks.length; i++) {
+    val += (marks[i].getAttribute("val") == "0") ? "" : marks[i].getAttribute("val");
+  }
+
+  return val;
+}
+
+function compare_x(a, b) {
+  if (a.center.x > b.center.x) return 1;
+  return -1;
+}
+
+function compare_y(a, b) {
+  if (a.center.y > b.center.y) return 1;
+  return -1;
+}
+
+function onOpenCvReady() {
+  document.getElementById('status').innerHTML = 'OpenCV.js is ready.';
+}
+
+</script>
+<script src="utils.js" type="text/javascript"></script>
+<script async src="opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
+</body>
+</html>
