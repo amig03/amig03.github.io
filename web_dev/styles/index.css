@@ -1,0 +1,37 @@
+#main_content {
+	column-count: 2;
+	column-gap: 30px;
+	text-indent: 1.5em;
+}
+
+#main_content p {
+	margin-bottom: 1em;
+}
+
+#img_container {
+	text-align: center;
+	width: 100%;
+	text-indent: 0;
+	margin-bottom: 1em;
+}
+
+#main_content img {
+	width: 80%;
+	border: 1px solid grey;
+	padding: 3px;
+	border-radius: 5px;
+	background-color: #ffdab9;
+	box-shadow: 1px 1px 5px grey;
+}
+
+@media (max-width: 700px) {
+	#main_content {
+		column-count: 1;
+	}
+}
+
+@media (max-width: 400px) {
+	#img_container {
+		display: none;
+	}
+}
