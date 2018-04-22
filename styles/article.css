@@ -1,0 +1,30 @@
+#content_container {
+	text-indent: 1.5em;
+	list-style-position: inside;
+	line-height: 20px;
+	overflow: hidden;
+}
+
+#content_container p {
+	margin: 0.5em 0;
+}
+
+#content_container img {
+	float: left;
+	width: 50%;
+	margin: 10px 20px 20px 10px;
+	border: 1px solid grey;
+	background-color: #ffdab9;
+	padding: 3px;
+	border-radius: 5px;
+}
+
+h2 {
+	margin: 0.6em 0;
+}
+
+@media (max-width: 450px) {
+	#content_container img {
+		width: 90%;
+	}
+}

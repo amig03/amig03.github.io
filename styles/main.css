@@ -1,0 +1,163 @@
+* {
+	box-sizing: border-box;
+	padding: 0;
+	margin: 0;
+}
+
+html {
+	position: relative;
+	min-height: 100%;
+}
+
+body {
+	height: 100%;
+}
+
+header {
+	background-color: red;
+	height: 10vh;
+	display: block;
+	position: relative;
+}
+
+a {
+	color: inherit;
+	text-decoration: unset;
+}
+
+header ul {
+	display: inline-block;
+	transform: translateX(-50%);
+	position: absolute;
+	bottom: 0;
+	cursor: default;
+	width: 100%;
+}
+
+header li {
+	font-family: 'Arial', sans-serif;
+	font-weight: bold;
+	line-height: 30px;
+	color: white;
+	display: inline-block;
+	cursor: pointer;
+	background-color: red;
+	padding: 10px;
+	border-bottom: 5px solid transparent;
+}
+
+header li:hover {
+	border-bottom: 5px solid darkred;
+	color: darkred;
+}
+
+header img {
+	height: 100%;
+	padding: 5px;
+}
+
+#menu {
+	text-align: center;
+}
+
+.active_page_button {
+	border-bottom: 5px solid white;
+}
+
+footer {
+	background-color: grey;
+	position: absolute;
+	bottom: 0;
+	width: 100%;
+	text-align: center;
+	color: white;
+	height: 3vh;
+}
+
+footer div {
+	display: inline-block;
+	/*padding: 5px;*/
+	color: white;
+}
+
+main {
+	padding: 20px;
+}
+
+main:after {
+	content: '';
+	height: 4vh;
+	width: 100%;
+	display: block;
+}
+
+#did_you_know {
+	float: left;
+	width: 13vw;
+	background-color: #ffdab9;
+	border-radius: 20px;
+	padding: 20px;
+	box-shadow: 2px 2px 5px grey;
+	text-align: justify;
+}
+
+#did_you_know p {
+	font-weight: bold;
+	margin-bottom: 10px;
+}
+
+#content_container {
+	text-align: justify;
+	margin-left: 16vw;
+	border-radius: 20px;
+	padding: 20px;
+	border: 1px solid lightgrey;
+	box-shadow: 2px 2px 5px grey;
+	min-height: 50vh;
+}
+
+h1 {
+	text-align: center;
+	margin-bottom: 0.5em;
+}
+
+@media (max-width: 600px), (orientation: portrait) {
+	#logo {
+		display: none;
+	}
+}
+
+@media (max-width: 1000px) {
+	#did_you_know {
+		display: none;
+	}
+
+	#content_container, main {
+		margin: 0;
+		padding: 5px;
+	}
+}
+
+@media (max-aspect-ratio: 4/7) {
+	header {
+		height: 7vh;
+	}
+}
+
+@media (orientation: portrait) {
+	header li {
+		font-size: 3.5vw;
+		line-height: 4vw;
+	}
+}
+
+@media (orientation: landscape) {
+	footer {
+		height: auto;
+	}
+
+	header li {
+		line-height: 4vh;
+		font-size: 3vh;
+	}
+}
