@@ -31,7 +31,8 @@
 }
 
 @media (max-width: 400px) {
-	#img_container {
-		display: none;
+	#main_content img {
+		padding: 0;
+		width: 95%;
 	}
 }
