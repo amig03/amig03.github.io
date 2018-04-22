@@ -23,7 +23,6 @@ var cur_image = {
 
 Array.prototype.forEach.call(images, function (item, i) {
 	item.addEventListener("click", function () {
-		// item.classList.add("modal_image");
 		modal_image.setAttribute("src", item.getAttribute("src"));
 		item.style.visibility = "hidden";
 		modal.style.display = "block";
@@ -39,19 +38,18 @@ Array.prototype.forEach.call(images, function (item, i) {
 modal.addEventListener("click", function () {
 	if (cur_image.item == undefined) return;
 
-	// cur_image.item.classList.remove("modal_image");
 	modal_image.setAttribute("src", "");
 	cur_image.item.style.visibility = "visible";
 	modal.style.display = "none";
 	body.style.overflow = "auto";
 
-	cur_image.item.style.transform = "";
+	modal_image.style.transform = "";
 	cur_image.item = undefined;
 });
 
 // Перелистывание фотографий
 
-addEventHandler(controls, "click touchstart keydown", function (e) {
+addEventHandler(controls, "click keydown", function (e) {
 	if (cur_image.item == undefined) return;
 	e.stopPropagation();
 
@@ -68,15 +66,12 @@ addEventHandler(controls, "click touchstart keydown", function (e) {
 	if (index == undefined) return;
 
 	cur_image.scale = 1;
-	cur_image.item.style.transform = "";
+	modal_image.style.transform = "";
 
 	modal_image.setAttribute("src", images[index].getAttribute("src"));
 
 	cur_image.item.style.visibility = "visible";
 	images[index].style.visibility = "hidden";
-
-	// images[index].classList.add("modal_image");
-	// cur_image.item.classList.remove("modal_image");
 
 	cur_image.item = images[index];
 	cur_image.index = index;
@@ -93,5 +88,5 @@ addEventHandler(document, "wheel", function (e) {
 		cur_image.scale += 0.1;
 	}
 
-	cur_image.item.style.transform = "translate(-50%, -50%) scale(" + cur_image.scale + ")";
+	modal_image.style.transform = "translate(-50%, -50%) scale(" + cur_image.scale + ")";
 });
