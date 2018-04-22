@@ -14,7 +14,7 @@ phone.value.replace(/_/g, function (str, pos) {
 
 // Обработка событий на поле ввода номера телефона
 
-addEventHandler(phone, "focus keydown", function (e) {
+addEventHandler(phone, "focus keydown input", function (e) {
 
 	var cur_pos = e.target.selectionStart || positions[0] || e.target.value.length;
 
