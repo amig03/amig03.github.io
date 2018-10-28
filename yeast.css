@@ -4,12 +4,9 @@
    border-radius: 10px;
 }
 
-#popular content {
+.best-yeast-unit {
    display: grid;
    grid-template-rows: repeat(auto-fit, minmax(min-content, 1fr));
-}
-
-.best-yeast-unit {
    border: 1px solid green;
    padding: 5px;
    border-radius: 10px;
