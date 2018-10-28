@@ -7,7 +7,6 @@
 
 .best-yeast-unit {
    display: grid;
-   grid-template-rows: minmax(max-content, 400px));
    grid-gap: 5px;
    border: 1px solid green;
    border-radius: 10px;
