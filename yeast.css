@@ -1,12 +1,13 @@
 .block {
-   padding: 20px 0;
+   margin: 20px 0;
    border: 1px solid black;
    border-radius: 10px;
 }
 
 .best-yeast-unit {
    display: grid;
-   grid-template-rows: repeat(auto-fit, minmax(min-content, 1fr));
+   grid-template-rows: minmax(max-content, 400px));
+   grid-gap: 5px;
    border: 1px solid green;
    padding: 5px;
    border-radius: 10px;
@@ -18,10 +19,13 @@
 }
 
 .button {
-   background-color: #f44336;
+   background-color: #c0ffc7;
    color: white;
    font-weight: bold;
-   text-align: center;
-   line-height: 30px;
    border-radius: 5px;
+   display: flex;
+   justify-content: center;
+   height: 30px;
+   align-items: center;
+   text-decoration: none;
 }
