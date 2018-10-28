@@ -1,0 +1,30 @@
+.block {
+   padding: 20px 0;
+   border: 1px solid black;
+   border-radius: 10px;
+}
+
+#popular content {
+   display: grid;
+   grid-template-rows: repeat(auto-fit, minmax(min-content, 1fr));
+}
+
+.best-yeast-unit {
+   border: 1px solid green;
+   padding: 5px;
+   border-radius: 10px;
+}
+
+.content-info  {
+   border-radius: 5px;
+   border: 1px solid black;
+}
+
+.button {
+   background-color: #f44336;
+   color: white;
+   font-weight: bold;
+   text-align: center;
+   line-height: 30px;
+   border-radius: 5px;
+}
